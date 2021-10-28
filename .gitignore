@@ -1,0 +1,15 @@
+*.[oa]
+*.lo
+*.la
+Makefile.in
+.deps
+.idea
+.DS_Store
+cmake-build-*
+Makefile
+.*.swp
+config.log
+config.status
+configure
+build/
+
