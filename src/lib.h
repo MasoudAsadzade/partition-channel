@@ -1,8 +1,12 @@
-//
-// Author:
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #pragma once
+
+#include "Exception.h"
 
 #include <string>
 #include <sstream>
@@ -62,32 +66,6 @@ const std::string to_string(const T &obj) {
     ss << obj;
     return ss.str();
 }
-static struct {
-    const std::string Partition = "partition";
-    const std::string Stop = "stop";
-    const std::string ClauseInjection = "inject";
-    const std::string Incremental = "incremental";
-    const std::string CnfClauses = "cnf-clauses";
-    const std::string Cnflearnts = "cnf-learnts";
-    const std::string Solve = "solve";
-    const std::string Lemmas = "lemmas";
-} Command;
 
-struct Task {
-    const enum {
-        incremental, resume, partition
-    } command;
-    std::string smtlib;
-};
-
-enum Threads{
-    Comunication, ClausePull, ClausePush
-};
-enum Status {
-    unknown, sat, unsat
-};
-static bool s_colorMode;
-
-#include "Exception.h"
 
 

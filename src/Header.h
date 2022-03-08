@@ -1,6 +1,8 @@
-//
-// Author:
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #pragma once
 
@@ -11,24 +13,24 @@
 #include <sstream>
 
 
-namespace net {
+namespace partitionChannel {
     typedef std::string header_prefix;
 
     class Header : public std::map<std::string, std::string> {
-        friend std::ostream &operator<<(std::ostream &stream, const Header &header);
+        friend std::ostream & operator<<(std::ostream & stream, const Header & header);
 
-        friend std::istream &operator>>(std::istream &, Header &);
+        friend std::istream & operator>>(std::istream &, Header &);
 
     public:
         uint8_t level() const;
 
-        net::Header copy(const std::vector<std::string> &) const;
+        partitionChannel::Header copy(const std::vector<std::string> &) const;
 
-        net::Header copy(const header_prefix &, const std::vector<std::string> &) const;
+        partitionChannel::Header copy(const header_prefix &, const std::vector<std::string> &) const;
 
         const std::vector<std::string> keys(const header_prefix &) const;
 
-        const std::string &get(const header_prefix &, const std::string &) const;
+        const std::string & get(const header_prefix &, const std::string &) const;
 
         void set(const header_prefix &, const std::string &, const std::string &);
 

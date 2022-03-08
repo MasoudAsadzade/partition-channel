@@ -3,4 +3,4 @@ project(partition_channel)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_library(partition_channel PartitionChannelLibrary.h src/Channel.h  src/Header.h src/Header.cpp src/lib.h src/lib.cpp )
+add_library(partition_channel PartitionChannelLibrary.h src/Channel.h  src/Header.h src/Header.cpp src/lib.h src/lib.cpp src/SMTSConfig.h)
