@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef PRINTER_H
-#define PRINTER_H
+#pragma once
 
 #include "Timer.h"
 
 namespace opensmt {
 
-    namespace Color {
+    namespace Color
+    {
         enum Code {
             FG_DEFAULT = 39,
             FG_Black = 30,
@@ -101,4 +101,3 @@ namespace opensmt {
         }
     };
 }
-#endif

@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2008 - 2012, Roberto Bruttomesso <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2008 - 2012, Roberto Bruttomesso
  * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
  *
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef TIMER_H
-#define TIMER_H
+#pragma once
 
 #include <string.h>
 #include <ostream>
@@ -192,4 +191,3 @@ namespace opensmt {
         std::chrono::duration<long double> accumulated_;
     };
 }
-#endif

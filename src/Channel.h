@@ -15,6 +15,7 @@
 #include <algorithm>
 
 class Channel {
+
     using td_t = const std::chrono::duration<double>;
     mutable std::mutex mutex;
     mutable std::condition_variable cv;
@@ -22,15 +23,15 @@ class Channel {
     std::deque<std::string> queries;
     std::atomic_bool requestStop;
     std::atomic_bool stop;
+
     bool clauseShareMode;
     bool isFirstTime;
     bool injectClause;
     int clauseLearnDuration;
     std::string currentSolverAddress;
     bool apiMode;
+
     std::map<std::string, std::vector<std::pair<std::string, int>>> clauses;
-//    bool shouldStop()                    { return std::atomic_flag_test_and_set_explicit(&requestStop, std::memory_order_acquire); }
-//    void clearShouldStop()               { requestStop.clear(std::memory_order_release); }
 
 public:
     Channel() : requestStop(false), stop(false), clauseShareMode(false), isFirstTime(false), injectClause(false),
