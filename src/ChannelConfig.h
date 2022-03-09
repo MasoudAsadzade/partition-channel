@@ -10,6 +10,7 @@
 
 namespace PartitionChannel
 {
+
     static struct {
         const std::string Partition = "partition";
         const std::string Stop = "stop";
