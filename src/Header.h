@@ -18,7 +18,6 @@ namespace partitionChannel {
 
     class Header : public std::map<std::string, std::string> {
         friend std::ostream & operator<<(std::ostream & stream, const Header & header);
-
         friend std::istream & operator>>(std::istream &, Header &);
 
     public:
