@@ -39,6 +39,5 @@ namespace PartitionChannel
         unknown, sat, unsat
     };
 
-    static bool s_colorMode;
 }
 
