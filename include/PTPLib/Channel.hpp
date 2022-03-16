@@ -5,7 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#pragma once
+#ifndef PTPLIB_CHANNEL_HPP
+#define PTPLIB_CHANNEL_HPP
 
 #include <vector>
 #include <mutex>
@@ -14,6 +15,8 @@
 #include <deque>
 #include <map>
 #include <algorithm>
+#include <chrono>
+#include "Header.hpp"
 
 class Channel {
 
@@ -21,7 +24,7 @@ class Channel {
     mutable std::mutex mutex;
     mutable std::condition_variable cv;
 
-    std::deque<std::string> queries;
+    std::deque<std::pair<PTPLib::net::Header, std::string>> queries;
     std::atomic_bool requestStop;
     std::atomic_bool stop;
 
@@ -39,7 +42,7 @@ public:
                 clauseLearnDuration(4000), apiMode(false)
     {}
 
-    void assign(std::vector<std::pair<std::string, int>> && toPublishTerms)
+    void assign(std::vector<std::pair<std::string, int>> & toPublishTerms)
     {
         clauses[currentSolverAddress].insert(std::end(clauses[currentSolverAddress]),
                                              std::begin(toPublishTerms), std::end(toPublishTerms));
@@ -113,7 +116,7 @@ public:
 
     int getClauseLearnDuration() const { return clauseLearnDuration; }
 
-    void push_back_query(std::string str) { queries.push_back(str); }
+    void push_back_query(std::pair<PTPLib::net::Header, std::string> & header) { queries.push_back(std::move(header)); }
 
     bool isApiMode() const { return apiMode; }
 
@@ -146,3 +149,5 @@ public:
     }
 
 };
+
+#endif PTPLIB_CHANNEL_HPP

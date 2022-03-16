@@ -5,11 +5,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-#pragma once
+#ifndef PTPLIB_PRINTER_HPP
+#define PTPLIB_PRINTER_HPP
 
-#include "Timer.h"
+#include "PTPLib/Timer.hpp"
+#include <mutex>
 
-namespace partitionChannel {
+namespace PTPLib {
 
     namespace Color
     {
@@ -101,3 +103,4 @@ namespace partitionChannel {
         }
     };
 }
+#endif // PTPLIB_PRINTER_HPP
