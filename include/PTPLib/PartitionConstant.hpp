@@ -36,7 +36,7 @@ namespace PTPLib
 
     enum Threads
     {
-        Search, ClausePull, ClausePush, MemCheck
+        SOLVER, CLAUSEPULL, CLAUSEPUSH, MEMORYCHECK
     };
 }
 

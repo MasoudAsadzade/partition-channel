@@ -162,8 +162,10 @@ namespace PTPLib::net {
         }
 
     public:
-        const header_prefix statistic = "parameter";;
-        const header_prefix parameter = "statistic";;
+        const header_prefix statistic = "parameter";
+        const header_prefix parameter = "statistic";
+
+        bool operator=(Header & hd) { *this = hd; return this; }
 
         uint8_t level() const {
             std::string node;
@@ -174,6 +176,12 @@ namespace PTPLib::net {
             node % std::make_pair("[", "") % std::make_pair("]", "") % std::make_pair(" ", "");
             auto v = ::split(node, ",");
             return (uint8_t)(v.size() / 2);
+        }
+
+        PTPLib::net::Header moveIn(PTPLib::net::Header & hd)
+        {
+
+            this->insert(make_move_iterator(std::begin(hd)), make_move_iterator(std::end(hd)));
         }
 
         PTPLib::net::Header copy(const std::vector <std::string> & keys) const {

@@ -25,8 +25,10 @@ class Channel {
     mutable std::condition_variable cv;
 
     std::deque<std::pair<PTPLib::net::Header, std::string>> queries;
+
+    PTPLib::net::Header currentHeader;
     std::atomic_bool requestStop;
-    std::atomic_bool stop;
+    std::atomic_bool terminate;
 
     bool clauseShareMode;
     bool isFirstTime;
@@ -38,11 +40,17 @@ class Channel {
     std::map<std::string, std::vector<std::pair<std::string, int>>> clauses;
 
 public:
-    Channel() : requestStop(false), stop(false), clauseShareMode(false), isFirstTime(false), injectClause(false),
-                clauseLearnDuration(4000), apiMode(false)
-    {}
+    Channel() :
+        requestStop         (false),
+        terminate           (false),
+        clauseShareMode     (false),
+        isFirstTime         (false),
+        injectClause        (false),
+        clauseLearnDuration (4000),
+        apiMode             (false)
+        {}
 
-    void assign(std::vector<std::pair<std::string, int>> & toPublishTerms)
+    void insert(std::vector<std::pair<std::string, int>> & toPublishTerms)
     {
         clauses[currentSolverAddress].insert(std::end(clauses[currentSolverAddress]),
                                              std::begin(toPublishTerms), std::end(toPublishTerms));
@@ -70,11 +78,11 @@ public:
 
     bool empty() const { return clauses.empty(); }
 
-    bool shouldTerminate() const { return stop; }
+    bool shouldTerminate() const { return terminate; }
 
-    void setTerminate() { stop = true; }
+    void setTerminate() { terminate = true; }
 
-    void clearTerminate() { stop = false; }
+    void clearTerminate() { terminate = false; }
 
     bool shouldStop() const { return requestStop; }
 
@@ -102,6 +110,8 @@ public:
 
     auto get_queris() const { return queries; }
 
+    auto get_FrontQuery() const { return queries.front(); }
+
     bool shouldInjectClause() const { return injectClause; }
 
     void setInjectClause() { injectClause = true; }
@@ -116,7 +126,11 @@ public:
 
     int getClauseLearnDuration() const { return clauseLearnDuration; }
 
-    void push_back_query(std::pair<PTPLib::net::Header, std::string> & header) { queries.push_back(std::move(header)); }
+    void push_back_query(std::pair<PTPLib::net::Header, std::string> & hd) { queries.push_back(hd); }
+
+    void move_Header(PTPLib::net::Header hd) { currentHeader.moveIn(hd); }
+
+    PTPLib::net::Header & getHeader()  { return currentHeader; }
 
     bool isApiMode() const { return apiMode; }
 
