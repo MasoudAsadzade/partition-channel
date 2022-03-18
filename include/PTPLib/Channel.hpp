@@ -12,7 +12,6 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
-#include <deque>
 #include <map>
 #include <algorithm>
 #include <chrono>
@@ -23,8 +22,6 @@ class Channel {
     using td_t = const std::chrono::duration<double>;
     mutable std::mutex mutex;
     mutable std::condition_variable cv;
-
-    std::deque<std::pair<PTPLib::net::Header, std::string>> queries;
 
     PTPLib::net::Header currentHeader;
     std::atomic_bool requestStop;
@@ -37,8 +34,8 @@ class Channel {
     std::string currentSolverAddress;
     bool apiMode;
 
-    std::map<std::string, std::vector<std::pair<std::string, int>>> clauses;
-
+    std::map<std::string, std::vector<std::pair<std::string, int>>> m_learned_clauses;
+    std::map<std::string, std::vector<std::pair<std::string, int>>> m_pulled_clauses;
 public:
     Channel() :
         requestStop         (false),
@@ -50,33 +47,42 @@ public:
         apiMode             (false)
         {}
 
-    void insert(std::vector<std::pair<std::string, int>> & toPublishTerms)
+    void insert_learned_clause(std::vector<std::pair<std::string, int>> & toPublishTerms)
     {
-        clauses[currentSolverAddress].insert(std::end(clauses[currentSolverAddress]),
+        m_learned_clauses[currentSolverAddress].insert(std::end(m_learned_clauses[currentSolverAddress]),
                                              std::begin(toPublishTerms), std::end(toPublishTerms));
     }
 
-    std::map<std::string, std::vector<std::pair<std::string, int>>> getClauses() { return std::move(clauses); };
+    void insert_pulled_clause(std::vector<std::pair<std::string, int>> & toPublishTerms) {
+        m_pulled_clauses[currentSolverAddress].insert(std::end(m_pulled_clauses[currentSolverAddress]),
+                                                      std::begin(toPublishTerms), std::end(toPublishTerms));
+    }
+
+    std::map<std::string, std::vector<std::pair<std::string, int>>> get_learned_clauses() const { return std::move(m_learned_clauses); };
+
+    std::map<std::string, std::vector<std::pair<std::string, int>>> & get_pulled_clauses()   { return m_pulled_clauses; };
 
     std::mutex & getMutex() { return mutex; }
 
-    size_t size() const { return clauses.size(); }
+    size_t size() const { return m_learned_clauses.size(); }
 
-    auto cbegin() const { return clauses.cbegin(); }
+    auto cbegin() const { return m_learned_clauses.cbegin(); }
 
-    auto cend() const { return clauses.cend(); }
+    auto cend() const { return m_learned_clauses.cend(); }
 
-    auto begin() const { return clauses.begin(); }
+    auto begin() const { return m_learned_clauses.begin(); }
 
-    auto end() const { return clauses.end(); }
+    auto end() const { return m_learned_clauses.end(); }
 
     void notify_one() { cv.notify_one(); }
 
     void notify_all() { cv.notify_all(); }
 
-    void clear() { clauses.clear(); }
+    void clear_learned_clauses() { m_learned_clauses.clear(); }
 
-    bool empty() const { return clauses.empty(); }
+    void clear_pulled_clauses() { m_pulled_clauses.clear(); }
+
+    bool empty() const { return m_learned_clauses.empty(); }
 
     bool shouldTerminate() const { return terminate; }
 
@@ -96,22 +102,6 @@ public:
 
     void clearClauseShareMode() { clauseShareMode = false; }
 
-    void pop_front_query() { queries.pop_front(); }
-
-    size_t size_query() const { return queries.size(); }
-
-    bool isEmpty_query() const { return queries.empty(); }
-
-    void clear_query() { queries.clear(); }
-
-    auto cbegin_query() const { return queries.cbegin(); }
-
-    auto cend_query() const { return queries.cend(); }
-
-    auto get_queris() const { return queries; }
-
-    auto get_FrontQuery() const { return queries.front(); }
-
     bool shouldInjectClause() const { return injectClause; }
 
     void setInjectClause() { injectClause = true; }
@@ -126,9 +116,7 @@ public:
 
     int getClauseLearnDuration() const { return clauseLearnDuration; }
 
-    void push_back_query(std::pair<PTPLib::net::Header, std::string> & hd) { queries.push_back(hd); }
-
-    void move_Header(PTPLib::net::Header hd) { currentHeader.moveIn(hd); }
+    void move_Header(PTPLib::net::Header  & hd) { currentHeader.moveIn(hd); }
 
     PTPLib::net::Header & getHeader()  { return currentHeader; }
 
@@ -149,12 +137,12 @@ public:
 
     void waitQueryOrTermination(std::unique_lock<std::mutex> & lock)
     {
-        cv.wait(lock, [&] { return (shouldTerminate() or not isEmpty_query()); });
+        cv.wait(lock, [&] { return (shouldTerminate()); });
     }
 
     void resetChannel() {
-        clear();
-        clear_query();
+        clear_pulled_clauses();
+        clear_learned_clauses();
         clearShouldStop();
         clearTerminate();
         clearClauseShareMode();

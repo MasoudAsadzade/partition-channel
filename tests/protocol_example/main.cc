@@ -14,15 +14,22 @@ int main(int argc, char** argv) {
     PTPLib::synced_stream stream (std::clog);
     std::srand(atoi(argv[1]));
     int nInstances =  1 + (std::rand() % (5 - 1 + 1));
-    stream.println( PTPLib::Color::FG_Yellow, "------------------- Number of Instances: ",nInstances," ------------------- ");
+    stream.println( PTPLib::Color::FG_Yellow,
+                    "------------------- Number of Instances: ",nInstances," ------------------- ");
     PTPLib::StoppableWatch watch;
+
+    int nCommands = 3 + (std::rand() % (10 - 3 + 1));
+    std::srand(atoi(argv[1]) + time(NULL));
+    Listener listener(stream);
+    int temp = 0;
     while (nInstances != 0) {
+        temp++;
         watch.start();
         int counter = 0;
-        int nCommands = 3 + (std::rand() % (10 - 3 + 1));
-        std::srand(atoi(argv[1]) + time(NULL));
-        Listener listener(nCommands, stream);
-        std::cout << "nCommands : " << nCommands + 1 <<std::endl;
+        listener.setNCommand(nCommands);
+        nInstances--;
+        stream.println( PTPLib::Color::FG_Yellow,
+                        "____________________ Instance: ", temp, "_____________________________");
         while (watch.elapsed_time_second() < static_cast<std::uint_fast8_t>(60)) {
 
             auto header = listener.readCommand(counter);
@@ -38,7 +45,6 @@ int main(int argc, char** argv) {
         }
         watch.reset();
         listener.handleStop();
-        nInstances--;
     }
     return 0;
 }

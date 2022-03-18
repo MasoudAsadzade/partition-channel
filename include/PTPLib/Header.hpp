@@ -180,7 +180,6 @@ namespace PTPLib::net {
 
         PTPLib::net::Header moveIn(PTPLib::net::Header & hd)
         {
-
             this->insert(make_move_iterator(std::begin(hd)), make_move_iterator(std::end(hd)));
         }
 

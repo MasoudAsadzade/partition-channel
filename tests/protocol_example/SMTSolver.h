@@ -17,7 +17,7 @@ private:
     Result result;
 
 public:
-    std::map< std::string, std::vector< std::pair< std::string, int> > >  m_pulledClauses;
+
     PTPLib::synced_stream & stream;
     PTPLib::StoppableWatch & timer;
 
@@ -33,8 +33,6 @@ public:
     Channel& getChannel()       { return channel; }
 
     void search();
-    void clausePull(int seed, const std::string & n_min, const std::string & n_max);
-    void clausePush(int seed, const std::string & n_min, const std::string & n_max);
-    bool lemma_pull(std::vector<std::pair<std::string, int>>  &lemmas, PTPLib::net::Header &header);
-    void lemma_push(std::map<std::string, std::vector<std::pair<std::string, int>>> const & lemmas, PTPLib::net::Header & header);
+    void inject_clauses(std::vector<std::pair<std::string, int>> & clauses);
+
 };
