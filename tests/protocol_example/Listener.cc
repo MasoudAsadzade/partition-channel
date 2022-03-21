@@ -28,11 +28,11 @@ void Listener::solver_worker() {
                 break;
         }
 
-        assert(channel.shouldStop());
+//        assert(channel.shouldStop());
 
         if (channel.shouldInjectClause())
         {
-            stream.println(true ? PTPLib::Color::FG_Cyan : PTPLib::Color::FG_DEFAULT,
+            stream.println(true ? PTPLib::Color::FG_Green : PTPLib::Color::FG_DEFAULT,
                            "[t SOLVER ] inject clause ");
             for ( auto &clauses : channel.get_pulled_clauses() ) {
                 if (solver)
@@ -40,10 +40,10 @@ void Listener::solver_worker() {
             }
             channel.clear_pulled_clauses();
         }
-        if (not isEmpty_query())
+        if (not getChannel().isEmpty_query())
         {
             PTPLib::Task task = readChannelQuery();
-            stream.println(PTPLib::Color::FG_Green, "[t SOLVER ] -> ", task.command,"ing...");
+//            stream.println(PTPLib::Color::FG_Green, "[t SOLVER ] -> ", task.command,"ing...");
             execute(task);
         }
 
@@ -56,14 +56,14 @@ void doParition(const std::string & node) { }
 
 PTPLib::Task Listener::readChannelQuery()
 {
-    std::pair<PTPLib::net::Header, std::string> f_query = get_FrontQuery();
-    if (f_query.first["command"] == PTPLib::Command.Incremental)
+    std::pair<PTPLib::safe_ptr< PTPLib::net::Header>, std::string> f_query = getChannel().get_FrontQuery();
+    if ((*f_query.first)["command"] == PTPLib::Command.Incremental)
         return PTPLib::Task {
                 .command = PTPLib::Task::incremental,
                 .smtlib = f_query.second
         };
-    else if (f_query.first["command"] == PTPLib::Command.Partition)
-        doParition(f_query.first["node"]);
+    else if ((*f_query.first)["command"] == PTPLib::Command.Partition)
+        doParition((*f_query.first)["node"]);
 
     return PTPLib::Task{
             .command = PTPLib::Task::resume
@@ -72,15 +72,15 @@ PTPLib::Task Listener::readChannelQuery()
 
 void Listener::execute(PTPLib::Task task)
 {
-    pop_front_query();
-    if (isEmpty_query())
+    getChannel().pop_front_query();
+    if (getChannel().isEmpty_query())
         channel.clearShouldStop();
     else channel.setShouldStop();
 }
 
 
 void Listener::interrupt(const std::string& command) {
-    stream.println(PTPLib::Color::FG_Yellow, "[t LISTENER ] Solver Should  -> " + command);
+//    stream.println(PTPLib::Color::FG_Yellow, "[t LISTENER ] Solver Should  -> " + command);
     if (command == PTPLib::Command.Stop) {
         channel.setTerminate();
         channel.setShouldStop();
@@ -95,35 +95,33 @@ void Listener::interrupt(const std::string& command) {
 }
 
 
-void Listener::handleMessage(std::pair<PTPLib::net::Header, std::string> & header, int randNumber)
+void Listener::handleMessage(std::pair<PTPLib::safe_ptr<PTPLib::net::Header>, std::string> & header_payload, int randNumber)
 {
     std::string seed = "1000";
-    stream.println(PTPLib::Color::FG_Red, "[t LISTENER -> ",header.first["command"],
-                   " command is received! ]" );
 //    channel.move_Header(header.first);
-    if (header.first["command"] == PTPLib::Command.Solve)
+    if (header_payload.first->at("command") == PTPLib::Command.Solve)
     {
-        solver = new SMTSolver(channel, header.first, stream, timer);
-        start_Thread( PTPLib::Threads::SOLVER, randNumber);
+        solver = new SMTSolver(channel, header_payload.first, stream, timer);
+        start_thread( PTPLib::Threads::SOLVER, randNumber);
     }
-    else if (header.first["command"] == PTPLib::Command.Stop)
+    else if (header_payload.first->at("command") == PTPLib::Command.Stop)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds (100));
         handleStop();
     }
-    else if (header.first["command"] == PTPLib::Command.Lemmas) {
+    else if (header_payload.first->at("command") == PTPLib::Command.Lemmas) {
 
-        start_Thread( PTPLib::Threads::CLAUSEPULL, randNumber, seed, seed);
-        start_Thread( PTPLib::Threads::CLAUSEPUSH, randNumber, seed, seed);
+        start_thread( PTPLib::Threads::CLAUSEPULL, randNumber, seed, seed);
+        start_thread( PTPLib::Threads::CLAUSEPUSH, randNumber, seed, seed);
     }
-    else if (header.first["command"] == PTPLib::Command.Terminate) {
+    else if (header_payload.first->at("command") == PTPLib::Command.Terminate) {
         exit(0);
     }
     else {
         std::unique_lock<std::mutex> lk(channel.getMutex());
 //        channel.move_Header(header.first);
         channel.setShouldStop();
-        push_back_query(header);
+        getChannel().push_back_query(header_payload);
         lk.unlock();
         channel.notify_all();
 
@@ -168,18 +166,25 @@ void Listener::worker(PTPLib::Threads tname, int seed, const std::string & td_mi
 
 }
 
-void Listener::start_Thread(PTPLib::Threads tname, int seed , const std::string & td_min, const std::string & td_max )
+void Listener::start_thread(PTPLib::Threads tname, int seed , const std::string & td_min, const std::string & td_max )
 {
     std::thread th(&Listener::worker, this, tname, seed, td_min, td_max);
     vecOfThreads.push_back( std::move(th) );
 }
 
-std::pair<PTPLib::net::Header, std::string> Listener::readCommand(int counter)
+std::pair<PTPLib::safe_ptr<PTPLib::net::Header>, std::string> Listener::readCommand(int counter)
 {
+//    struct solver_entry {
+//        PTPLib::net::Header header;
+//        std::string payload;
+//        solver_entry(){}
+//    };
     std::string payload;
+//    std::pair<std::string, safe_ptr<PTPLib::net::Header> > solver_entry;
+
     int rDuration = 0;
     if (counter == 1)
-        rDuration = 5000;
+        rDuration = 1000;
     else {
         std::srand(counter + timer.elapsed_time_microseconds());
         rDuration = 1 + (std::rand() % (1000 - 1 + 1));
@@ -187,32 +192,32 @@ std::pair<PTPLib::net::Header, std::string> Listener::readCommand(int counter)
 //    stream.println( PTPLib::Color::FG_Yellow, "************ waiting time *********", rDuration);
     std::this_thread::sleep_for(std::chrono::milliseconds (rDuration));
 
-    PTPLib::net::Header header;
-    header["name"] = "instance.smt2";
+    PTPLib::safe_ptr<PTPLib::net::Header> header;
+    header->emplace("name","instance"+ to_string(instanceNum) +".smt2");
+    header->emplace("node", "[" + to_string(counter) + "]");
     if (counter == 0) {
-        header["command"] = PTPLib::Command.Solve;
-        header["name"] = "instance.smt2";
-        payload = "solve( " + header["name"] + " )";
+        header->emplace("command", PTPLib::Command.Solve);
+        payload = "solve( " + header->at("name") + " )";
     }
 
     else if (counter == 1) {
-        header["command"] = PTPLib::Command.Lemmas;
+        header->emplace("command", PTPLib::Command.Lemmas);
     }
 
     else if (counter == nCommands) {
-        header["name"] = "instance.smt2";
-        header["command"] = PTPLib::Command.Stop;
+        header->emplace("command", PTPLib::Command.Stop);
     }
 
     else if (counter % 2 == 0) {
-        header["command"] = PTPLib::Command.Incremental;
-        header["name"] = "instance_" + to_string(counter) + ".smt2";
-        payload = "move ( " + header["name"] + " )";
+        header->emplace("command", PTPLib::Command.Incremental);
+//        header->emplace("name", "instance_" + to_string(counter) + ".smt2");
+        header->emplace("_node", "[" + to_string(counter+1) + "]");
+        payload = "move ( " + header->at("name") + " )";
     }
 
     else {
-        header["command"] = PTPLib::Command.Partition;
-        header["node"] = "[" + to_string(counter) + "]";
+        header->emplace("command", PTPLib::Command.Partition);
+        header->emplace("partitionN", "2");
     }
 
     return std::make_pair(header, payload);
@@ -221,7 +226,7 @@ std::pair<PTPLib::net::Header, std::string> Listener::readCommand(int counter)
 void Listener::push_clause_worker(int seed, const  std::string & n1,  const std::string & n2)
 {
     int pushDuration = atoi(n1.c_str()) + ( seed % ( atoi(n2.c_str()) - atoi(n1.c_str()) + 1 ) );
-    stream.println(PTPLib::Color::FG_Yellow, "[t PUSH -> timout : ", pushDuration," ms");
+    stream.println(PTPLib::Color::FG_Blue, "[t PUSH -> timout : ", pushDuration," ms");
     std::chrono::duration<double> wakeupAt = std::chrono::milliseconds (pushDuration);
     std::map<std::string, std::vector<std::pair<std::string, int>>> m_clauses;
     while (not getChannel().shouldTerminate()) {
@@ -234,15 +239,15 @@ void Listener::push_clause_worker(int seed, const  std::string & n1,  const std:
             else if (not getChannel().empty())
             {
                 m_clauses = getChannel().get_learned_clauses();
-                stream.println(PTPLib::Color::FG_Yellow, "[t PUSH -> push learned clauses to Cloud Clause");
+//                stream.println(PTPLib::Color::FG_Blue, "[t PUSH ] -> push learned clauses to Cloud Clause");
                 getChannel().get_learned_clauses();
-                PTPLib::net::Header header = getChannel().getHeader().copy({"name"});
+                PTPLib::safe_ptr<PTPLib::net::Header> header = getChannel().getHeader().copy({"name"});
                 lk.unlock();
 
                 write_lemma(m_clauses, header);
                 m_clauses.clear();
             }
-            else std::cout << "[t PUSH] Channel empty! " <<std::endl;
+            else stream.println(PTPLib::Color::FG_Blue, "[t PUSH ] -> Channel empty!");
 
         }
         else
@@ -262,13 +267,13 @@ void Listener::pull_clause_worker(int seed, const  std::string & n1, const std::
         if (not getChannel().waitFor(lk, wakeupAt))
         {
             if (getChannel().shouldTerminate()) break;
-            PTPLib::net::Header header;
+            PTPLib::safe_ptr<PTPLib::net::Header> header;
             lk.unlock();
             std::vector<std::pair<std::string, int>> lemmas;
             if (this->read_lemma(lemmas, header))
             {
                 lk.lock();
-                stream.println(PTPLib::Color::FG_Blue, "[t PULL ]-> pulled clauses to buffer, Size: ",lemmas.size() );
+                stream.println(PTPLib::Color::FG_Black, "[t PULL ] -> pulled clauses to buffer, Size: ",lemmas.size() );
 
                 channel.insert_pulled_clause(lemmas);
                 channel.setInjectClause();
@@ -281,7 +286,7 @@ void Listener::pull_clause_worker(int seed, const  std::string & n1, const std::
     }
 }
 
-bool Listener::read_lemma(std::vector<std::pair<std::string, int>>  & lemmas, PTPLib::net::Header & header) {
+bool Listener::read_lemma(std::vector<std::pair<std::string, int>>  & lemmas, PTPLib::safe_ptr<PTPLib::net::Header> & header) {
     std::this_thread::sleep_for(std::chrono::milliseconds (100));
     if (std::rand() % 3 == 0)
         return false;
@@ -291,13 +296,12 @@ bool Listener::read_lemma(std::vector<std::pair<std::string, int>>  & lemmas, PT
     return not lemmas.empty();
 }
 
-void Listener::write_lemma(std::map<std::string, std::vector<std::pair<std::string, int>>> const & m_clauses, PTPLib::net::Header & header)
+void Listener::write_lemma(std::map<std::string, std::vector<std::pair<std::string, int>>> const & m_clauses, PTPLib::safe_ptr<PTPLib::net::Header> & header)
 {
     std::this_thread::sleep_for(std::chrono::milliseconds (100));
     for ( const auto &toPushClause : m_clauses )
     {
         stream.println(true ? PTPLib::Color::FG_BrightBlue : PTPLib::Color::FG_DEFAULT,
-                       "[t PUSH ] -> push learned clauses to Cloud Clause from Node -> "+
-                       header["node"] + " Size: ", toPushClause.second.size());
+                       "[t PUSH ] -> push learned clauses to Cloud Clause Size: ", toPushClause.second.size());
     }
 }

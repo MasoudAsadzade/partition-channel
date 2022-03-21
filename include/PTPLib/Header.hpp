@@ -162,10 +162,8 @@ namespace PTPLib::net {
         }
 
     public:
-        const header_prefix statistic = "parameter";
-        const header_prefix parameter = "statistic";
-
-        bool operator=(Header & hd) { *this = hd; return this; }
+        const header_prefix statistic = "statistic";
+        const header_prefix parameter = "parameter";
 
         uint8_t level() const {
             std::string node;

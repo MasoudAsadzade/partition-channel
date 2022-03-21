@@ -16,13 +16,15 @@
 #include <algorithm>
 #include <chrono>
 #include "Header.hpp"
+#include "ThreadSafeContainer.hpp"
+#include <queue>
 
 class Channel {
 
     using td_t = const std::chrono::duration<double>;
     mutable std::mutex mutex;
     mutable std::condition_variable cv;
-
+    std::queue<std::pair<PTPLib::safe_ptr<PTPLib::net::Header>, std::string>> queries;
     PTPLib::net::Header currentHeader;
     std::atomic_bool requestStop;
     std::atomic_bool terminate;
@@ -57,6 +59,17 @@ public:
         m_pulled_clauses[currentSolverAddress].insert(std::end(m_pulled_clauses[currentSolverAddress]),
                                                       std::begin(toPublishTerms), std::end(toPublishTerms));
     }
+    void pop_front_query() { queries.pop();}
+
+    size_t size_query() const { return queries.size(); }
+
+    bool isEmpty_query() const { return queries.empty(); }
+
+    auto get_queris() const { return queries; }
+
+    auto get_FrontQuery() const { return queries.front(); }
+
+    void push_back_query(std::pair<PTPLib::safe_ptr< PTPLib::net::Header>, std::string> & hd) { queries.push(std::move(hd)); }
 
     std::map<std::string, std::vector<std::pair<std::string, int>>> get_learned_clauses() const { return std::move(m_learned_clauses); };
 
@@ -137,7 +150,7 @@ public:
 
     void waitQueryOrTermination(std::unique_lock<std::mutex> & lock)
     {
-        cv.wait(lock, [&] { return (shouldTerminate()); });
+        cv.wait(lock, [&] { return (shouldTerminate() or not isEmpty_query()); });
     }
 
     void resetChannel() {

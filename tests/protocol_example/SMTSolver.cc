@@ -25,7 +25,7 @@ SMTSolver::Result SMTSolver::doSolve() {
 
     {
         std::scoped_lock<std::mutex> lk(channel.getMutex());
-        stream.println(PTPLib::Color::FG_Green, "[t SOLVER -> add learned clauses to channel buffer, Size=",
+        stream.println(PTPLib::Color::FG_Green, "[t SOLVER ] -> add learned clauses to channel buffer, Size=",
                        toPublishClauses.size() );
         channel.insert_learned_clause(toPublishClauses);
     }

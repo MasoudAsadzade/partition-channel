@@ -2,6 +2,7 @@
 #include <PTPLib/Channel.hpp>
 #include <PTPLib/Printer.hpp>
 #include <PTPLib/Header.hpp>
+#include <PTPLib/ThreadSafeContainer.hpp>
 #include <chrono>
 
 
@@ -10,7 +11,7 @@ public:
     enum class Result { SAT, UNSAT, UNKNOWN };
 private:
     Channel & channel;
-    PTPLib::net::Header & header;
+    PTPLib::safe_ptr< PTPLib::net::Header> & header;
 
     bool learnSomeClauses(std::vector<std::pair<std::string ,int>> & learned_clauses);
     Result doSolve();
@@ -22,7 +23,7 @@ public:
     PTPLib::StoppableWatch & timer;
 
 
-    SMTSolver(Channel & ch, PTPLib::net::Header & hd, PTPLib::synced_stream & st, PTPLib::StoppableWatch & tm) :
+    SMTSolver(Channel & ch, PTPLib::safe_ptr< PTPLib::net::Header> & hd, PTPLib::synced_stream & st, PTPLib::StoppableWatch & tm) :
          channel (ch),
          header  (hd),
          stream  (st),
